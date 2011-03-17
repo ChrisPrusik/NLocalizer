@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+
+ NLocalizer (C) 2010 Krzysztof Arkadiusz Prusik
+ The fast, simple solution for localizing .NET applications, by text files.
+ Latest version: http://NLocalizer.codeplex.com/
+
+ $Id: MSBuild.proj 3217 2010-10-03 05:42:39Z unknown $
+
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 2.1 of the License, or (at your option) any later version.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+
+-->
+<!--
+ Required:
+ 1. MSBuild Community Tasks - http://msbuildtasks.tigris.org/
+ 2. c:\program Files\subversion\bin\svninfo.exe - for example from VisualSVN
+ Please build after SVN Commit
+-->
+<Project ToolsVersion="2.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+ <Import Project="$(MSBuildExtensionsPath)\MSBuildCommunityTasks\MSBuild.Community.Tasks.Targets"/>
+
+ <PropertyGroup>
+   <Major>1</Major>
+   <Minor>1</Minor>
+ </PropertyGroup>
+
+ <ItemGroup>
+   <SourceFiles Include="NLocalizer\**\*.cs" />
+   <ExampleSourceFiles Include="NLocalizer.Example\**\*.cs" />
+   <ExampleResourceFiles Include="NLocalizer.Example\**\*.resx" />
+   <ExampleOutResourceFiles Include="NLocalizer.Example\**\*.resources" />
+   <LangFiles Include="NLocalizer.Example\*.lang" />
+   <AppSourceFiles Include="NLocalizerApp\**\*.cs" />
+   <AppResourceFiles Include="NLocalizerApp\**\*.resx" />
+   <AppOutResourceFiles Include="NLocalizerApp\**\*.resources" />
+   <TargetFiles Include="Bin\*.pdb;Bin\*.dll;Bin\*.exe;Bin\*.xml;Bin\*.chm;Bin\*.lang" />
+   <AssemblyInfoFiles Include="**\Properties\AssemblyInfo.cs" />
+ </ItemGroup>
+
+ <Target Name="Build">
+
+   <MakeDir Directories="Bin" ContinueOnError="true"/>
+
+   <Version BuildType="Automatic" StartDate="2010-01-01" >
+     <Output TaskParameter="Build" PropertyName="Build" />
+   </Version>
+
+   <SvnVersion LocalPath=".">
+     <Output TaskParameter="Revision" PropertyName="Revision" />
+   </SvnVersion>
+
+   <Message Text="Version: $(Major).$(Minor).$(Build).$(Revision)"/>
+
+   <FileUpdate
+     Files="@(AssemblyInfoFiles)"
+     Regex="(\d+)\.(\d+)\.(\d+)\.(\d+)"
+     ReplacementText="$(Major).$(Minor).$(Build).$(Revision)" />
+   
+   <Csc Sources="@(SourceFiles)"
+     Platform="AnyCPU"
+     TargetType="Library"
+     OutputAssembly="Bin\NLocalizer.dll"
+     DocumentationFile="Bin\NLocalizer.xml"
+     DebugType="pdbonly"
+     Optimize="true"
+     WarningLevel="4"/>
+
+   <GenerateResource
+     Sources="@(ExampleResourceFiles)">
+   </GenerateResource>
+   
+   <Csc Sources="@(ExampleSourceFiles)"
+     Platform="AnyCPU"
+     AdditionalLibPaths="Bin"
+     References="NLocalizer.dll"
+     TargetType="winexe"
+     OutputAssembly="Bin\NLocalizer.Example.exe"
+     Resources="@(ExampleOutResourceFiles)"
+     DebugType="pdbonly"
+     Optimize="true"
+     WarningLevel="4"/>
+
+   <GenerateResource
+     Sources="@(AppResourceFiles)">
+   </GenerateResource>
+
+   <Csc Sources="@(AppSourceFiles)"
+     Platform="AnyCPU"
+     AdditionalLibPaths="Bin"
+     References="NLocalizer.dll"
+     TargetType="winexe"
+     Win32Icon="NLocalizerApp\App.ico"
+     OutputAssembly="Bin\NLocalizerApp.exe"
+     Resources="@(AppOutResourceFiles)"
+     DebugType="pdbonly"
+     Optimize="true"
+     WarningLevel="4"/>
+
+   <Copy SourceFiles="@(LangFiles)" DestinationFolder="Bin"/>
+
+   <Zip Files="@(TargetFiles)" WorkingDirectory="Bin"
+     ZipFileName="Bin\NLocalizer-$(Major).$(Minor).$(Build).$(Revision).zip"/>
+
+   <FileUpdate
+     Files="@(AssemblyInfoFiles)"
+     Regex="(\d+)\.(\d+)\.(\d+)\.(\d+)"
+     ReplacementText="$(Major).$(Minor).0.0" />
+
+   <Touch Files="@(AssemblyInfoFiles)" />
+
+   <FileUpdate
+     Files="Sandcastle.shfbproj"
+     Regex="&lt;HelpTitle>.*&lt;/HelpTitle>"
+     ReplacementText="&lt;HelpTitle>NLocalizer $(Major).$(Minor)&lt;/HelpTitle>" />
+
+   <FileUpdate
+     Files="Sandcastle.shfbproj"
+     Regex="&lt;ProductTitle>.*&lt;/ProductTitle>"
+     ReplacementText="&lt;ProductTitle>NLocalizer $(Major).$(Minor)&lt;/ProductTitle>" />
+
+ </Target>
+
+</Project>
